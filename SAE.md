@@ -61,9 +61,20 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 - 将 SAE 应用于注意力层输出（并非传统的 MLP 或残差流），揭示注意力层学习的核心概念
 - 输入项：**Scaled Dot-Product Attention** 输出后拼接的、过线性层之前的输出 $\mathbf{z}_\text{cat}$
 - 重构公式：$$\mathbf{z}_\text{cat}=\mathbf{\hat{z}_\text{cat}}+\epsilon(\mathbf{z}_{cat})=\sum_{i=0}^{d_\text{sae}}f_i(\mathbf{z}_\text{cat})\mathbf{d}_i+\mathbf{b}+\epsilon(\mathbf{z}_\text{cat})$$ $\epsilon(\mathbf{z}_\text{cat})$ 是误差项
-- 
+- 归因技术
+  - 基于权重的头归因：将特征方向 $\mathbf{d}_i$ 拆分为各头的子向量 $\mathbf{d}_{i, j}$，计算头 $k$ 的贡献占比 $h_{i, k}=\frac{\|\mathbf{d}_{i,k}\|_2}{\sum_{j=1}^{n_\text{heads}}\|\mathbf{d}_{i,j}\|_2}$
+  - 直接特征归因（DFA）：按照头位置分解 SAE 预激活 $f_i^{\text{pre}}(\mathbf{z}_\text{cat})=\mathbf{w}_i^\top\mathbf{z}_\text{cat}=\mathbf{w}_{i,1}^\top\mathbf{z}_1+\mathbf{w}_{i,2}^\top\mathbf{z}_2+\cdots+\mathbf{w}_{i,n_\text{heads}}^\top\mathbf{z}_{n_\text{heads}}$
+  - 递归 DFA：冻结注意力模式 / LayerNorm，线性追溯特征至上游残差流、组件及早期 token
+- 结论
+  - 多义性：对 GPT-2 Small 仅发现 14 个单义候选头（Top10 归因特征高度相关），至少 90% 的头存在多义性
+  - 层间功能规律：
+    - 早期层（0-3）：语法特征（单 token、bigram）+ 简单实体跟踪；
+    - 中期层（4-9）：复杂语义（动词家族、推理短语、时间关系）；
+    - 晚期层（10-11）：语法调整、bigram 补全 + 少量长程上下文跟踪。
+### 评论：未覆盖 Transformer 的 QK 电路等关键组件；SAE 的线性分解可能无法捕捉注意力层的非线性计算
 
 ## 7. Scaling and evaluating sparse autoencoders (ICLR 2025)
+- 大规模训练
 
 ## 8. Sparse Feature Circuits: Discovering and Editing Interpretable Causal Graphs in Language Models (ICLR 2025)
 
@@ -83,13 +94,14 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 
 ## 16. **SAE-V: Interpreting Multimodal Models for Enhanced Alignment (ICML 2025)**
 
-## 17. SAeUron: Interpretable Concept Unlearning in Diffusion Models with Sparse Autoencoders (ICML 2025)
+## 17. **SAeUron: Interpretable Concept Unlearning in Diffusion Models with Sparse Autoencoders (ICML 2025)**
 
 ## 18. Archetypal SAE: Adaptive and Stable Dictionary Learning for Concept Extraction in Large Vision Models (ICML 2025)
 
 ## 19. SAEBench: A Comprehensive Benchmark for Sparse Autoencoders in Language Model Interpretability (ICML 2025)
 
 ## 20. From Mechanistic Interpretability to Mechanistic Biology: Training, Evaluating, and Interpreting Sparse Autoencoders on Protein Language Models (ICML 2025)
+- 略
 
 ## 21. Universal Sparse Autoencoders: Interpretable Cross-Model Concept Alignment (ICML 2025)
 
@@ -97,7 +109,7 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 
 ## 23. AxBench: Steering LLMs? Even Simple Baselines Outperform Sparse Autoencoders (ICML 2025)
 
-## 24. Scaling Sparse Feature Circuits For Studying In-Context Learning (ICML 2025)
+## 24. **Scaling Sparse Feature Circuits For Studying In-Context Learning (ICML 2025)**
 
 ## 25. Sparse Autoencoders, Again? (ICML 2025)
 
@@ -105,7 +117,7 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 
 ## 27. Sparse Autoencoders for Hypothesis Generation (ICML 2025)
 
-## 28. Interpreting CLIP with Hierarchical Sparse Autoencoders (ICML 2025)
+## 28. **Interpreting CLIP with Hierarchical Sparse Autoencoders (ICML 2025)**
 
 ## 29. Jacobian Sparse Autoencoders: Sparsify Computations, Not Just Activations (ICML 2025)
 
@@ -117,32 +129,35 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 
 ## 33. The Complexity of Learning Sparse Superposed Features with Feedback (ICML 2025)
 
-## 34. Disentangling Superpositions: Interpretable Brain Encoding Model with Sparse Concept Atoms (NeurIPS 2025)
+## 34. **SAUCE: Selective Concept Unlearning in Vision-Language Models with Sparse Autoencoders (ICCV 2025)**
 
-## 35. **One-Step is Enough: Sparse Autoencoders for Text-to-Image Diffusion Models (NeurIPS 2025)**
+## 35. Unveiling Language-Specific Features in Large Language Models via Sparse Autoencoders (ACL 2025)
 
-## 36. **SAEMark: Steering Personalized Multilingual LLM Watermarks with Sparse Autoencoders (NeurIPS 2025)**
+## 36. Disentangling Superpositions: Interpretable Brain Encoding Model with Sparse Concept Atoms (NeurIPS 2025)
+- 略
 
-## 37. **Transformer Key-Value Memories Are Nearly as Interpretable as Sparse Autoencoders (NeurIPS 2025)**
+## 37. **One-Step is Enough: Sparse Autoencoders for Text-to-Image Diffusion Models (NeurIPS 2025)**
 
-## 38. **Sparse Diffusion Autoencoder for Test-time Adapting Prediction of Spatiotemporal Dynamics (NeurIPS 2025)**
+## 38. **SAEMark: Steering Personalized Multilingual LLM Watermarks with Sparse Autoencoders (NeurIPS 2025)**
 
-## 39. From Flat to Hierarchical: Extracting Sparse Representations with Matching Pursuit (NeurIPS 2025)
+## 39. **Transformer Key-Value Memories Are Nearly as Interpretable as Sparse Autoencoders (NeurIPS 2025)**
 
-## 40. Revising and Falsifying Sparse Autoencoder Feature Explanations (NeurIPS 2025)
+## 40. **Sparse Diffusion Autoencoder for Test-time Adapting Prediction of Spatiotemporal Dynamics (NeurIPS 2025)**
 
-## 41. Projecting Assumptions: The Duality Between Sparse Autoencoders and Concept Geometry (NeurIPS 2025)
+## 41. From Flat to Hierarchical: Extracting Sparse Representations with Matching Pursuit (NeurIPS 2025)
 
-## 42. Proxy-SPEX: Sample-Efficient Interpretability via Sparse Feature Interactions in LLMs (NeurIPS 2025)
+## 42. Revising and Falsifying Sparse Autoencoder Feature Explanations (NeurIPS 2025)
 
-## 43. A is for Absorption: Studying Feature Splitting and Absorption in Sparse Autoencoders (NeurIPS 2025)
+## 43. Projecting Assumptions: The Duality Between Sparse Autoencoders and Concept Geometry (NeurIPS 2025)
 
-## 44. **Sparse Autoencoders Learn Monosemantic Features in Vision-Language Models (NeurIPS 2025)**
 
-## 45. **VL-SAE: Interpreting and Enhancing Vision-Language Alignment with a Unified Concept Set (NeurIPS 2025)**
+## 44. Proxy-SPEX: Sample-Efficient Interpretability via Sparse Feature Interactions in LLMs (NeurIPS 2025)
 
-## 46. Dense SAE Latents Are Features, Not Bugs (NeurIPS 2025)
+## 45. A is for Absorption: Studying Feature Splitting and Absorption in Sparse Autoencoders (NeurIPS 2025)
 
-## 47. SAUCE: Selective Concept Unlearning in Vision-Language Models with Sparse Autoencoders (ICCV 2025)
+## 46. **Sparse Autoencoders Learn Monosemantic Features in Vision-Language Models (NeurIPS 2025)**
 
-## 48. Unveiling Language-Specific Features in Large Language Models via Sparse Autoencoders (ACL 2025)
+## 47. **VL-SAE: Interpreting and Enhancing Vision-Language Alignment with a Unified Concept Set (NeurIPS 2025)**
+
+## 48. Dense SAE Latents Are Features, Not Bugs (NeurIPS 2025)
+
