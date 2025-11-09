@@ -122,23 +122,42 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 - 结论：小 SAE 不完整，大 SAE 非原子性
 
 ## 14. **Sparse autoencoders reveal selective remapping of visual concepts during adaptation (ICLR 2025)**
-- CLIP 通过提示适配可以高效适配下游任务，但适配过程中模型内部表示变化机制未知；提出针对 CLIP ViT 的 Patch-SAE，能够提取细粒度（如形状、颜色、语义）的可解释视觉概念及补丁级空间归因；分析 CLIP 在分类任务中的行为
-- **Patch-SAE**：包含图像 token 的 SAE
+- CLIP 通过提示适配可以高效适配下游任务，需要研究其内部表征在适配过程中如何变化；提出针对 CLIP ViT 的 Patch-SAE，能够提取细粒度（如形状、颜色、语义）的可解释视觉概念及补丁级空间归因；分析 CLIP 在分类任务中的行为
+- **Patch-SAE**：包含图像 token 的 SAE ![](./Sparse%20Autoencoders%20Reveal%20Selective%20Remapping%20of%20Visual%20Concepts%20during%20Adaptation/1.png)
   - 输入：冻结 CLIP ViT-B/16 的第 11 层（倒数第二层）残差流输出，包含 1 个 [CLS] token + 14×14=196 个图像 token，每个 token 维度 $d_\text{ViT}=768$。
   - 编码器：$W_E \in \mathbb{R}^{d_\text{ViT}\times d_\text{SAE}}$
   - 激活函数：$\phi$ ReLU
   - 解码器：$W_D\in\mathbb{R}^{d_\text{SAE}\times d_\text{ViT}}$ $$\text{SAE}(\mathbf{z})=W_D^\top\phi(W_E^\top\mathbf{z})$$ $$\mathcal{L}_\text{SAE}=\|\text{SAE}(\mathbf{z})-\mathbf{z}\|_2^2+\lambda_{l_1}\|\phi f(\mathbf{z})\|_1$$
 
-  ![](./Sparse%20Autoencoders%20Reveal%20Selective%20Remapping%20of%20Visual%20Concepts%20during%20Adaptation/1.png)
 
-- 分析 SAE 的 latents
-  - 将能最大程度激活每个 SAE 潜变量的一组图像作为参考图像。我们对单张图像的补丁级激活值取平均值，将平均激活值最高的前 k 张图像作为每个 SAE 潜变量的参考图像。
-  - 通过补丁级潜变量激活值，我们可探究局部化概念；此外，通过对补丁级激活值进行聚合，还能表征图像级、类别级和数据集级的概念。
-  - 对于某一特定概念，我们将补丁级激活值可视化为分割掩码，以此呈现该概念的空间归因。
 
-  ![](./Sparse%20Autoencoders%20Reveal%20Selective%20Remapping%20of%20Visual%20Concepts%20during%20Adaptation/2.png)
+- **分析 SAE 的 latents**
+![](./Sparse%20Autoencoders%20Reveal%20Selective%20Remapping%20of%20Visual%20Concepts%20during%20Adaptation/2.png)
+  - 对于每个 SAE 的潜变量（共 $d_\text{SAE}$ 个），将能最大程度激活该 SAE 潜变量的 top-k 图像作为参考图像（共 $d_\text{SAE}\times k$ 张图像）
+  - 计算激活分布的汇总统计
+    - **Sparsity**：表示该 latent 被激活的频率。高频的 latent 可能代表一个常见概念或一个无法解释的噪声
+    - **Mean activation value**：对激活样本中的正激活值取平均值来计算。反应了 SAE 的置信度。如果一个 latent 有比较高的平均激活值，则它更有可能代表一个有意义的概念
+    - **Label entropy**：衡量有多少个不同的标签激活了 latent。熵为零表示所有参考图像都具有相同的标签。熵值越高代表有更多标签对 latent 的激活有贡献。
+    - **Label standard deviation**
+  - 将 patch-level 激活转化为图像级激活、类别级激活、数据集级激活
+    - 使用一个较小的阈值 $\tau$，对第 i 张图的第 j 个 token 的激活向量二值化 $$\mathbf{a}_{i,j}[s]=\mathbb{I}(\mathbf{h}_{i,j}[s]>\tau),\text{ where }1\le s\le d_\text{SAE}$$ $$\mathbf{a}_i[s]=\sum_{j=1}^{n_i}\mathbf{a}_{i,j}[s],\ \mathbf{a}_c[s]=\sum_{i\in\mathcal{I}_c}\mathbf{a}_i[s],\ \mathbf{a}_D[s]=\sum_{i\in D}\mathbf{a}_i[s]$$
+  - Localizing
+    - 对于第 s 个 latent 和图像 $x_i$，利用激活值 $\mathbf{h}_{i,j}[s]$ 可以在图像中突出显示对应概念
+![](./Sparse%20Autoencoders%20Reveal%20Selective%20Remapping%20of%20Visual%20Concepts%20during%20Adaptation/3.jpeg)
 
-## 15. **Residual Stream Analysis with Multi-Layer SAEs (ICLR 2025)**
+- **研究 SAE latents 与分类任务下模型行为之间的关系**
+  - 将 CLIP 图像编码器的**中间层表示**替换为 SAE 重构的输出，观察性能 —— SAE latents 包含类别判别信息
+  - CLIP 和 MaPLe 中激活度最高的 SAE latents 大多重叠
+  - CLIP 和 MaPLe 中 top 的 SAE latents 影响不同：MaPLE 比 CLIP 更有效地利用了相同数量的 SAE 潜在变量进行分类
+  - 基于提示的 Adaptation 通过优化常见激活概念与下游任务类别之间映射关系，带来性能提升
+
+### 评论：有许多高标签熵的 latent 无法解释
+
+## 15. Residual Stream Analysis with Multi-Layer SAEs (ICLR 2025)
+- 传统 SAE 仅在单个 Transformer层的激活向量上训练，无法研究信息在跨层残差流中的流动与变化；现有研究推测模型可能**通过多层同时激活编码语义概念**，单层 SAE 无法捕捉该特征
+- 基于残差流理论：Transformer 通过自注意力和 MLP 层选择性读写残差流信息，且相邻层残差流向量应具有较高相似性
+- **MLSAE** 在所有层的残差流激活向量上训练，且参数跨层共享
+
 
 ## 16. **SAE-V: Interpreting Multimodal Models for Enhanced Alignment (ICML 2025)**
 
