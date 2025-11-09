@@ -4,6 +4,10 @@
 
 叠加（superposition）导致多义性
 
+## 流程
+  - 介绍 Vanilla SAE
+  - 侧重不同模型、不同任务上的应用（LLM、LVLM、Diffusion Model、Text-to-Image Model）
+
 
 ## 1. Sparse autoencoders find highly interpretable features in language models (ICLR 2024)
 ![插入图片](./Sparse%20autoencoders%20find%20highly%20interpretable%20features%20in%20language%20models/1.png)
@@ -73,22 +77,66 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
     - 晚期层（10-11）：语法调整、bigram 补全 + 少量长程上下文跟踪。
 ### 评论：未覆盖 Transformer 的 QK 电路等关键组件；SAE 的线性分解可能无法捕捉注意力层的非线性计算
 
+
 ## 7. Scaling and evaluating sparse autoencoders (ICLR 2025)
-- 大规模训练
+- 重建与稀疏性目标难以平衡，需调优L1正则系数；大规模训练中死潜变量多；现有研究仅聚焦小规模 SAE
+- **k-Sparse SAE**
+  - 编码器仅保留前 k 个最大潜变量激活，解码器不变
+  - 编码器 - 解码器转置初始化
+  - 利用死潜变量重建误差，使死潜变量获得梯度信号 $\mathcal{L}_\text{aux}=\|(\mathbf{x}-\hat{\mathbf{x}})-\mathbf{W}_\text{dec}\mathbf{z}_\text{dead}\|_2^2$
+
 
 ## 8. Sparse Feature Circuits: Discovering and Editing Interpretable Causal Graphs in Language Models (ICLR 2025)
+- 粗粒度组件分析具有多义性；基于神经元、线性探测的细粒度方法依赖人工设计标注
+
 
 ## 9. Efficient Dictionary Learning with Switch Sparse Autoencoders (ICLR 2025)
+![输入图片](./Efficient%20Dictionary%20Learning%20with%20Switch%20Sparse%20Autoencoders/1.png)
+- 密集编码器前向传播是时间瓶颈，潜变量预激活存储是内存瓶颈
+- 路由网络 + 多专家 SAE
+  - 仅激活一个专家
+
 
 ## 10. Rethinking Evaluation of Sparse Autoencoders through the Representation of Polysemous Words (ICLR 2025)
+![](./Rethinking%20Evaluation%20of%20Sparse%20Autoencoders%20through%20the%20Representation%20of%20Polysemous%20Words/1.png)
+- 现有评估无法直接验证 SAE 是否实现 “提取单义特征” 的核心目标。提出聚焦多义词的 SAE 评估框架 **PS-Eval**。
 
 ## 11. Sparse Autoencoders Reveal Temporal Difference Learning in Large Language Models (ICLR 2025)
+- “仅训练下一个 token 预测的模型为何能实现 RL” 的机制未知
+- 验证 LLM 是否自发涌现时序差分（ TD ）学习机制。
 
 ## 12. Towards Principled Evaluations of Sparse Autoencoders for Interpretability and Control (ICLR 2025)
+![](./Towards%20Principled%20Evaluations%20of%20Sparse%20Autoencoders%20for%20Interpretability%20and%20Control/1.png)
+- SAE 缺少 Ground Truth 导致评估困难
+  - 任务属性参数化：选择任务相关的、人类可理解的属性（如 IO 任务的 IO/S/Pos），确保属性能完全捕捉任务关键信息。
+  - 构建监督特征字典
+  - 无监督字典评估：以监督字典为基准，从三个维度（重建的必要性 / 充分性、属性稀疏可控性、因果一致性可解释性）评估 SAE，且评估过程不依赖特征的人工解释（如可控性测试通过优化特征子集实现属性编辑，无需知道特征对应哪个属性）。
 
 ## 13. Sparse Autoencoders Do Not Find Canonical Units of Analysis (ICLR 2025)
+- **Motivation**
+  - 机械可解释性的核心诉求：将 LLM 的激活分解为 “规范分析单元”—— 即满足**唯一性**（无变体）、**完整性**（覆盖所有必要特征）、**原子性**（不可再分）的可解释特征。
+  - 此前假设“足够大的 SAE 字典能够找到规范单元”未被验证
+- 验证完整性：通过在不同字典大小的 SAE 间插入 / 替换潜变量，观察重构性能变化，以分类大 SAE 的潜变量类型。
+- 验证原子性：**meta-SAEs**
+  - meta-SAEs 的训练数据并非 LLM 激活，而是另一 SAE 的解码器矩阵 $\mathbf{W_\text{dec}}$ —— 即把大 SAE 的每个潜变量（对应 $\mathbf{W_\text{dec}}$ 的一列）作为训练样本，目标是学习对这些潜变量的稀疏分解。
+- 结论：小 SAE 不完整，大 SAE 非原子性
 
-## 14. Sparse autoencoders reveal selective remapping of visual concepts during adaptation (ICLR 2025)
+## 14. **Sparse autoencoders reveal selective remapping of visual concepts during adaptation (ICLR 2025)**
+- CLIP 通过提示适配可以高效适配下游任务，但适配过程中模型内部表示变化机制未知；提出针对 CLIP ViT 的 Patch-SAE，能够提取细粒度（如形状、颜色、语义）的可解释视觉概念及补丁级空间归因；分析 CLIP 在分类任务中的行为
+- **Patch-SAE**：包含图像 token 的 SAE
+  - 输入：冻结 CLIP ViT-B/16 的第 11 层（倒数第二层）残差流输出，包含 1 个 [CLS] token + 14×14=196 个图像 token，每个 token 维度 $d_\text{ViT}=768$。
+  - 编码器：$W_E \in \mathbb{R}^{d_\text{ViT}\times d_\text{SAE}}$
+  - 激活函数：$\phi$ ReLU
+  - 解码器：$W_D\in\mathbb{R}^{d_\text{SAE}\times d_\text{ViT}}$ $$\text{SAE}(\mathbf{z})=W_D^\top\phi(W_E^\top\mathbf{z})$$ $$\mathcal{L}_\text{SAE}=\|\text{SAE}(\mathbf{z})-\mathbf{z}\|_2^2+\lambda_{l_1}\|\phi f(\mathbf{z})\|_1$$
+
+  ![](./Sparse%20Autoencoders%20Reveal%20Selective%20Remapping%20of%20Visual%20Concepts%20during%20Adaptation/1.png)
+
+- 分析 SAE 的 latents
+  - 将能最大程度激活每个 SAE 潜变量的一组图像作为参考图像。我们对单张图像的补丁级激活值取平均值，将平均激活值最高的前 k 张图像作为每个 SAE 潜变量的参考图像。
+  - 通过补丁级潜变量激活值，我们可探究局部化概念；此外，通过对补丁级激活值进行聚合，还能表征图像级、类别级和数据集级的概念。
+  - 对于某一特定概念，我们将补丁级激活值可视化为分割掩码，以此呈现该概念的空间归因。
+
+  ![](./Sparse%20Autoencoders%20Reveal%20Selective%20Remapping%20of%20Visual%20Concepts%20during%20Adaptation/2.png)
 
 ## 15. **Residual Stream Analysis with Multi-Layer SAEs (ICLR 2025)**
 
