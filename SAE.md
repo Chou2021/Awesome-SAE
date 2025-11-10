@@ -7,6 +7,10 @@
 ## 流程
   - 介绍 Vanilla SAE
   - 侧重不同模型、不同任务上的应用（LLM、LVLM、Diffusion Model、Text-to-Image Model）
+    - LLM：1、
+    - CLIP：3、14
+    - LVLM：16
+    - Diffusion：
 
 
 ## 1. Sparse autoencoders find highly interpretable features in language models (ICLR 2024)
@@ -166,6 +170,12 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 ## 18. Archetypal SAE: Adaptive and Stable Dictionary Learning for Concept Extraction in Large Vision Models (ICML 2025)
 
 ## 19. SAEBench: A Comprehensive Benchmark for Sparse Autoencoders in Language Model Interpretability (ICML 2025)
+- 传统评估依赖无监督代理指标，单一指标无法覆盖可解释性、特征解纠缠等实际需求
+- 4 大评估能力与 8 个指标详解
+  - 概念检测：Sparse Probing、Feature Absorption
+  - 可解释性：Automated Interpretability
+  - 重建能力：Loss Recovered、稀疏度 - 保真度权衡
+  - 特征解纠缠：Unlearning、SCR（伪相关移除）、TPP（目标探针扰动）、RAVEL
 
 ## 20. From Mechanistic Interpretability to Mechanistic Biology: Training, Evaluating, and Interpreting Sparse Autoencoders on Protein Language Models (ICML 2025)
 - 略
@@ -175,6 +185,17 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 ## 22. Learning Multi-Level Features with Matryoshka Sparse Autoencoders (ICML 2025)
 
 ## 23. AxBench: Steering LLMs? Even Simple Baselines Outperform Sparse Autoencoders (ICML 2025)
+- 现有 LLM 控制技术存在明显局限
+  - 提示工程易被越狱，全参数微调依赖高质量数据集且模型行为不可解释
+  - SAE、Linear Steering Vector 等表示型方法，因缺乏统一评估基准，性能无法与传统方法直接对比
+  - 需要在开放词汇、长文本生成场景下，系统性评估表示型转向技术是否可替代传统控制方法
+- AxBench
+  - 数据生成流程
+    - genre 标注：为每个概念分配文本 / 代码 / 数学三类 genre
+    - 正负样本生成（包含概念/不包含概念）
+  - 评估维度
+    - 概念检测：给定模型表示，判断是否含目标概念（二分类）
+    - 模型转向：干预模型表示，使输出融入目标概念
 
 ## 24. **Scaling Sparse Feature Circuits For Studying In-Context Learning (ICML 2025)**
 
