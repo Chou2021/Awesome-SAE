@@ -164,8 +164,32 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 
 
 ## 16. **SAE-V: Interpreting Multimodal Models for Enhanced Alignment (ICML 2025)**
-
+![](./SAE-V%20Interpreting%20Multimodal%20Models%20for%20Enhanced%20Alignment/1.png)
+- 挑战
+  - 解决多模态大语言模型因图像模态融入导致的可解释性与可控性差
+  - 单模态 SAE 无法分离 MLLM 中的跨模态特征
+- **SAE-V**的核心应用：数据过滤算法
+  - 特征激活 Token 收集
+    - 采样数据集子集 $\mathcal{D}_S$，输入 MLLM 获得隐藏态 $H$，SAE-V 编码得到 $Z$，收集激活特征对应的 Token（$z_{jk}>\delta$，$\delta$ 为激活阈值）
+    - 获取全数据集的特征激活样本
+  - 跨模态权重计算
+    - 对每个特征 $f_k$，取 Top-K 文本 Token（$\mathcal{A}_k\cap\mathcal{T}$）与 Top-K 视觉 Token（$\mathcal{A}_k\cap\mathcal{V}$），计算余弦相似度作为权重 $\omega_k$
+    - 量化特征捕捉跨模态信息的能力
+  - 数据排序
+    - 对每条数据，求和其激活特征 $\omega_k$ 作为分数，按分数排序筛选高质量数据
+- 局限：
+  - 理论基础不足：SAE-V 的图像 - 文本相似度 metric、跨模态共现特征与模型性能的数学关系未完全揭示
+  - 模态仅覆盖文本 - 图像模态
 ## 17. **SAeUron: Interpretable Concept Unlearning in Diffusion Models with Sparse Autoencoders (ICML 2025)**
+![](./SAeUron%20Interpretable%20Concept%20Unlearning%20in%20Diffusion%20Models%20with%20Sparse%20Autoencoders/1.png)
+- 挑战
+  - 现有机器遗忘方法缺乏透明度，易“掩盖”而非“移除”概念易受对抗攻击，难同时遗忘多概念。
+  - 基于 SAE 的扩散模型可解释概念遗忘方法。
+- **SAeUron**
+  - 激活数据来源：Stable Diffusion 的交叉注意力块，提取多去噪步骤（t=1 至 50）的特征图（形状 $F_t\in\mathbb{R}^{h\times\omega\times d}$），每个特征向量（d维）作为 SAE 训练样本。
+  - $$\mathbf{z}=\text{TopK}(W_\text{enc}\mathbf{x}-\mathbf{b}_\text{pre})$$
+  - $$\mathbf{\hat{x}}=W_\text{dec}\mathbf{z}+\mathbf{b}_\text{pre}$$
+  - $$\mathcal{L}(\mathbf{x})=\|\mathbf{x}-\mathbf{\hat{x}}\|_2^2+\alpha\mathcal{L}_\text{aux}$$
 
 ## 18. Archetypal SAE: Adaptive and Stable Dictionary Learning for Concept Extraction in Large Vision Models (ICML 2025)
 
