@@ -169,7 +169,7 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 - 挑战
   - 解决多模态大语言模型因图像模态融入导致的可解释性与可控性差
   - 单模态 SAE 无法分离 MLLM 中的跨模态特征
-- **SAE-V**的核心应用：数据过滤算法
+- **SAE-V** 的核心应用：数据过滤算法
   - 特征激活 Token 收集
     - 采样数据集子集 $\mathcal{D}_S$，输入 MLLM 获得隐藏态 $H$，SAE-V 编码得到 $Z$，收集激活特征对应的 Token（$z_{jk}>\delta$，$\delta$ 为激活阈值）
     - 获取全数据集的特征激活样本
@@ -188,10 +188,7 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
   - 基于 SAE 的扩散模型可解释概念遗忘方法。
 - **SAeUron**
   - 架构
-    - 激活数据来源：Stable Diffusion 的交叉注意力块，提取多去噪步骤（t=1 至 50）的特征图（形状 $F_t\in\mathbb{R}^{h\times\omega\times d}$），每个特征向量（d维）作为 SAE 训练样本。
-    - $$\mathbf{z}=\text{TopK}(W_\text{enc}\mathbf{x}-\mathbf{b}_\text{pre})$$
-    - $$\mathbf{\hat{x}}=W_\text{dec}\mathbf{z}+\mathbf{b}_\text{pre}$$
-    - $$\mathcal{L}(\mathbf{x})=\|\mathbf{x}-\mathbf{\hat{x}}\|_2^2+\alpha\mathcal{L}_\text{aux}$$
+    - 激活数据来源：Stable Diffusion 的交叉注意力块，提取多去噪步骤（t=1 至 50）的特征图（形状 $F_t\in\mathbb{R}^{h\times\omega\times d}$），每个特征向量（d维）作为 SAE 训练样本。$$\mathbf{z}=\text{TopK}(W_\text{enc}\mathbf{x}-\mathbf{b}_\text{pre})$$ $$\mathbf{\hat{x}}=W_\text{dec}\mathbf{z}+\mathbf{b}_\text{pre}$$ $$\mathcal{L}(\mathbf{x})=\|\mathbf{x}-\mathbf{\hat{x}}\|_2^2+\alpha\mathcal{L}_\text{aux}$$
     辅助损失防止死潜变量
   - 目标概念特征选择
     - 识别对目标概念激活强、对其他概念激活弱的 SAE 特征
@@ -248,6 +245,21 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 
 ## 22. Learning Multi-Level Features with Matryoshka Sparse Autoencoders (ICML 2025)
 ![](./Learning%20Multi-Level%20Features%20with%20Matryoshka%20Sparse%20Autoencoders/1.png)
+- 扩大字典规模时，稀疏性目标（L1 正则化或 L0 约束）会引发三大问题
+  - 特征分裂：通用概念拆分为多个特定特征，高层概念缺失
+  - 特征吸收：通用特征出现漏洞，部分特例被细分特征吸收
+  - 特征组合：独立概念合并为符合特征，丢失底层独立特征
+- SAE 字典扩大虽然降低训练损失，但下游任务性能下降
+- **Matryoshka SAE**
+  - 通过多个递增规模的嵌套子 SAE，在单一特征空间同时保留抽象（通用）和具体（细分）特征
+  - 给定最大字典规模 m，嵌套字典尺寸序列 $\mathcal{M}=m_1,m_2,...,m_n$（$m_1<m_2<...<m_n=m$）
+  - 强制多尺度重建：$$\mathcal{L}(\mathbf{x})=\sum_{m\in\mathcal{M}}\|\mathbf{x}-(\mathbf{f}(\mathbf{x})_{0:m}\mathbf{W}^\text{dec}_{0:m}+\mathbf{b}^\text{dec})\|_2^2+\alpha\mathcal{L}_\text{aux}$$ $\mathcal{L}_\text{aux}$ 为死潜变量的辅助损失
+  - 采用 **BatchTopK**：保留 batch 中 $B\times K$ 个最大激活
+- 局限性
+  - 重建性能较差，不适用于需精确激活重建的场景
+  - 嵌套目标增加训练时间
+  - 可解释性评估依赖定量指标和自动化评分，缺乏人类手动验证
+
 
 ## 23. AxBench: Steering LLMs? Even Simple Baselines Outperform Sparse Autoencoders (ICML 2025)
 - 现有 LLM 控制技术存在明显局限
