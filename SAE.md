@@ -5,12 +5,12 @@
 叠加（superposition）导致多义性
 
 ## 流程
-  - 介绍 Vanilla SAE
-  - 侧重不同模型、不同任务上的应用（LLM、LVLM、Diffusion Model、Text-to-Image Model）
+  - <span id="vanilla-sae"></span>介绍 Vanilla SAE $$z=\mathrm{ReLU}(W_\text{enc}(x-b_\text{pre})+b_\text{enc})\\\hat{x}=W_\text{dec}z+b_\text{pre}$$
+  - 侧重不同模型、不同任务上的应用（LLM、LVLM、Diffusion Model、Text-to-Image Model），要了解具体的 metric，关注一下计算资源
     - LLM：1（讲基础的preliminary）
-    - Vision Foundation Model：21
-    - CLIP：3、14
-    - LVLM：16
+    <!-- - Vision Foundation Model：21-->
+    - CLIP：3、14、28
+    - LVLM：16、34
     - Stable Diffusion：17
 
 
@@ -20,11 +20,12 @@
 - SAE 架构设计：
   - 挑选输入层：语言模型内部激活（残差流、MLP 子层、注意力头子层）
   - 内部稀疏表征：$d_{\mathrm{hid}}=R\times d_{\mathrm{in}}$，ReLU 激活，实现超完备表征
-  - 编码器和解码器权重绑定：编码器矩阵$M\in\mathbb{R}^{d_{\mathrm{hid}}\times d_{\mathrm{in}}}$，解码器矩阵$M^\top$，① 减半内存消耗；② 明确特征方向（避免编码器 / 解码器歧义）；③ 残差流训练无性能损失 $$\mathbf{c}=\mathrm{ReLU}(M\mathbf{x}+\mathbf{b})$$ $$\hat{\mathbf{x}}=M^\top\mathbf{c}=\sum_{i=1}^{d_{\mathrm{hid}}-1}c_i\mathbf{f}_i$$ $$\mathcal{L}(\mathbf{x})=\|\mathbf{x}-\hat{\mathbf{x}}\|_2^2+\alpha\|\mathbf{c}\|_1$$
+  - 编码器和解码器权重绑定：编码器矩阵$M\in\mathbb{R}^{d_{\mathrm{hid}}\times d_{\mathrm{in}}}$，解码器矩阵$M^\top$，① 减半内存消耗；② 明确特征方向（避免编码器 / 解码器歧义）；③ 残差流训练无性能损失 $$\mathbf{c}=\mathrm{ReLU}(M\mathbf{x}+\mathbf{b})\\\hat{\mathbf{x}}=M^\top\mathbf{c}=\sum_{i=1}^{d_{\mathrm{hid}}-1}c_i\mathbf{f}_i\\\mathcal{L}(\mathbf{x})=\|\mathbf{x}-\hat{\mathbf{x}}\|_2^2+\alpha\|\mathbf{c}\|_1$$
   - 残差流$\alpha=8.6e-4$，MLP $\alpha=3.2e−4$
   - 对$M$进行行归一化，防止模型通过增大特征向量规模来降低稀疏损失
   - 自动可解释性评分：
-### 评论：局限性之一 —— 重构损失非零
+#### 评论：局限性之一 —— 重构损失非零
+
 
 ## 2. Improving Sparse Decomposition of Language Model Activations with Gated Sparse Autoencoders (NeurIPS 2024)
 - 为鼓励稀疏性施加的 L1 惩罚会导致收缩偏差（系统低估特征激活幅度），需在重建保真度与稀疏性间妥协，损害分解准确性。
@@ -33,7 +34,8 @@
 $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdot(\mathbf{W}_\mathrm{gate})_{ij}$$
 - $$\mathcal{L}_\mathrm{gated}(\mathbf{x})\coloneqq\|\mathbf{x}-\hat{\mathbf{x}}(\mathbf{\tilde{f}}(\mathbf{x}))\|_2^2+\lambda\|\mathrm{ReLU}(\pi_\mathrm{gated}(\mathbf{x}))\|_1+\|\mathbf{x}-\hat{\mathbf{x}}_\mathrm{frozen}(\mathrm{ReLU}(\pi_\mathrm{gated}(\mathbf{x})))\|_2^2$$
 
-## 3. **Interpreting CLIP with Sparse Linear Concept Embeddings (SpLiCE) (NeurIPS 2024)**
+
+## <span id="center"></span>3. **Interpreting CLIP with Sparse Linear Concept Embeddings (SpLiCE) (NeurIPS 2024)**
 - 提出**任务无关、无需训练**的方法，将 CLIP 嵌入分解为**稀疏、非负、人类可解释**的概念组合
 - 稀疏分解的四个充分条件
   - 图文在概念空间稀疏，即潜在概念向量 $\omega$ 的非零元素数 $\|\omega\|_0\le \alpha$（$\alpha \ll \text{概念总数} k$）
@@ -48,13 +50,15 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
     - 概念词典中心化：词典矩阵 $C$ 减去词典中所有概念嵌入的均值
     - 分解得到概念权重 $w^*$ 后，$\hat{z}^{img}=\sigma(Cw^*+\mu_{img})$
   - 稀疏性与语义重建的权衡 $$\min_{w\in\mathbb{R}_+^c}\|Cw-z\|_2^2+2\lambda\|w\|_1$$
-### 评论：预先定义码本，不需要额外解释特征，但重建误差较大，可解释性局限于码本概念
+#### 评论：预先定义码本，不需要额外解释特征，但重建误差较大，可解释性局限于码本概念
+
 
 ## 4. Identifying Functionally Important Features with End-to-End Sparse Dictionary Learning (NeurIPS 2024)
 - 传统 SAE 因聚焦激活重构而优先学习数据集结构，忽略网络功能重要特征
 - 通过最小化原始模型与插入 SAE 后模型的输出分布 KL 散度训练 SAE $$\mathcal{L}_\text{e2e+ds}=\text{KL}(\hat{y},y)+\phi\|Enc(a^{(l)})\|_1+\frac{\beta_l}{L-l}\sum_{k=l+1}^{L-1}\|\hat{a}^{(k)}-a^{(k)}\|_2^2$$
 - 增加下游层重构损失：防止模型通过非原始计算路径实现输出分布匹配（如利用下游层未被原模型使用的变换）
-### 评论：仍需要保证特征准确重构
+#### 评论：仍需要保证特征准确重构
+
 
 ## 5. Codebook features: Sparse and discrete interpretability for neural networks (ICML 2024)
 ![输入图片](./Codebook%20Features%20Sparse%20and%20Discrete%20Interpretability%20for%20Neural%20Networks/1.jpeg)
@@ -63,7 +67,8 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 - 基于预训练模型微调，在注意力头和/或 MLP 块插入码本，保留残差流完整性
 - $$\mathcal{L}=-\sum_{i=1}^N\log p_\theta(x_i|x_{<i})+\lambda\cdot\text{MSE}(\mathcal{C}(x),\text{stop-gradient(x)})$$
 
-### 评论：和之前的 end-to-end SAE 类似
+#### 评论：和之前的 end-to-end SAE 类似
+
 
 ## 6. Interpreting Attention Layer Outputs with Sparse Autoencoders (ICML 2024)
 ![输入图片](/Interpreting%20Attention%20Layer%20Outputs%20with%20Sparse%20Autoencoders/1.jpeg)
@@ -80,13 +85,13 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
     - 早期层（0-3）：语法特征（单 token、bigram）+ 简单实体跟踪；
     - 中期层（4-9）：复杂语义（动词家族、推理短语、时间关系）；
     - 晚期层（10-11）：语法调整、bigram 补全 + 少量长程上下文跟踪。
-### 评论：未覆盖 Transformer 的 QK 电路等关键组件；SAE 的线性分解可能无法捕捉注意力层的非线性计算
+#### 评论：未覆盖 Transformer 的 QK 电路等关键组件；SAE 的线性分解可能无法捕捉注意力层的非线性计算
 
 
 ## 7. Scaling and evaluating sparse autoencoders (ICLR 2025)
 - 重建与稀疏性目标难以平衡，需调优L1正则系数；大规模训练中死潜变量多；现有研究仅聚焦小规模 SAE
 - **k-Sparse SAE**
-  - 编码器仅保留前 k 个最大潜变量激活，解码器不变
+  - 编码器仅保留前 k 个最大潜变量激活，解码器不变 $$\mathbf{z}=\text{TopK}(W_\text{enc}(\mathbf{x}-\mathbf{b}_\text{pre}))\\\hat{\mathbf{x}}=W_\text{dec}\mathbf{z}+\mathbf{b}_\text{pre}$$
   - 编码器 - 解码器转置初始化
   - 利用死潜变量重建误差，使死潜变量获得梯度信号 $\mathcal{L}_\text{aux}=\|(\mathbf{x}-\hat{\mathbf{x}})-\mathbf{W}_\text{dec}\mathbf{z}_\text{dead}\|_2^2$
 
@@ -106,9 +111,11 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 ![](./Rethinking%20Evaluation%20of%20Sparse%20Autoencoders%20through%20the%20Representation%20of%20Polysemous%20Words/1.png)
 - 现有评估无法直接验证 SAE 是否实现 “提取单义特征” 的核心目标。提出聚焦多义词的 SAE 评估框架 **PS-Eval**。
 
+
 ## 11. Sparse Autoencoders Reveal Temporal Difference Learning in Large Language Models (ICLR 2025)
 - “仅训练下一个 token 预测的模型为何能实现 RL” 的机制未知
 - 验证 LLM 是否自发涌现时序差分（ TD ）学习机制。
+
 
 ## 12. Towards Principled Evaluations of Sparse Autoencoders for Interpretability and Control (ICLR 2025)
 ![](./Towards%20Principled%20Evaluations%20of%20Sparse%20Autoencoders%20for%20Interpretability%20and%20Control/1.png)
@@ -116,6 +123,7 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
   - 任务属性参数化：选择任务相关的、人类可理解的属性（如 IO 任务的 IO/S/Pos），确保属性能完全捕捉任务关键信息。
   - 构建监督特征字典
   - 无监督字典评估：以监督字典为基准，从三个维度（重建的必要性 / 充分性、属性稀疏可控性、因果一致性可解释性）评估 SAE，且评估过程不依赖特征的人工解释（如可控性测试通过优化特征子集实现属性编辑，无需知道特征对应哪个属性）。
+
 
 ## 13. Sparse Autoencoders Do Not Find Canonical Units of Analysis (ICLR 2025)
 - **Motivation**
@@ -126,6 +134,7 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
   - meta-SAEs 的训练数据并非 LLM 激活，而是另一 SAE 的解码器矩阵 $\mathbf{W_\text{dec}}$ —— 即把大 SAE 的每个潜变量（对应 $\mathbf{W_\text{dec}}$ 的一列）作为训练样本，目标是学习对这些潜变量的稀疏分解。
 - 结论：小 SAE 不完整，大 SAE 非原子性
 
+
 ## 14. **Sparse autoencoders reveal selective remapping of visual concepts during adaptation (ICLR 2025)**
 - CLIP 通过提示适配可以高效适配下游任务，需要研究其内部表征在适配过程中如何变化；提出针对 CLIP ViT 的 Patch-SAE，能够提取细粒度（如形状、颜色、语义）的可解释视觉概念及补丁级空间归因；分析 CLIP 在分类任务中的行为
 - **Patch-SAE**：包含图像 token 的 SAE ![](./Sparse%20Autoencoders%20Reveal%20Selective%20Remapping%20of%20Visual%20Concepts%20during%20Adaptation/1.png)
@@ -133,8 +142,6 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
   - 编码器：$W_E \in \mathbb{R}^{d_\text{ViT}\times d_\text{SAE}}$
   - 激活函数：$\phi$ ReLU
   - 解码器：$W_D\in\mathbb{R}^{d_\text{SAE}\times d_\text{ViT}}$ $$\text{SAE}(\mathbf{z})=W_D^\top\phi(W_E^\top\mathbf{z})$$ $$\mathcal{L}_\text{SAE}=\|\text{SAE}(\mathbf{z})-\mathbf{z}\|_2^2+\lambda_{l_1}\|\phi f(\mathbf{z})\|_1$$
-
-
 
 - **分析 SAE 的 latents**
 ![](./Sparse%20Autoencoders%20Reveal%20Selective%20Remapping%20of%20Visual%20Concepts%20during%20Adaptation/2.png)
@@ -156,7 +163,8 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
   - CLIP 和 MaPLe 中 top 的 SAE latents 影响不同：MaPLE 比 CLIP 更有效地利用了相同数量的 SAE 潜在变量进行分类
   - 基于提示的 Adaptation 通过优化常见激活概念与下游任务类别之间映射关系，带来性能提升
 
-### 评论：有许多高标签熵的 latent 无法解释
+#### 评论：有许多高标签熵的 latent 无法解释
+
 
 ## 15. Residual Stream Analysis with Multi-Layer SAEs (ICLR 2025)
 - 传统 SAE 仅在单个 Transformer层的激活向量上训练，无法研究信息在跨层残差流中的流动与变化；现有研究推测模型可能**通过多层同时激活编码语义概念**，单层 SAE 无法捕捉该特征
@@ -181,14 +189,16 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 - 局限：
   - 理论基础不足：SAE-V 的图像 - 文本相似度 metric、跨模态共现特征与模型性能的数学关系未完全揭示
   - 模态仅覆盖文本 - 图像模态
-## 17. **SAeUron: Interpretable Concept Unlearning in Diffusion Models with Sparse Autoencoders (ICML 2025)**
+
+
+## 17. <span id="saeuron"></span>**SAeUron: Interpretable Concept Unlearning in Diffusion Models with Sparse Autoencoders (ICML 2025)**
 ![](./SAeUron%20Interpretable%20Concept%20Unlearning%20in%20Diffusion%20Models%20with%20Sparse%20Autoencoders/1.png)
 - 挑战
   - 现有机器遗忘方法缺乏透明度，易“掩盖”而非“移除”概念易受对抗攻击，难同时遗忘多概念。
   - 基于 SAE 的扩散模型可解释概念遗忘方法。
 - **SAeUron**
   - 架构
-    - 激活数据来源：Stable Diffusion 的交叉注意力块，提取多去噪步骤（t=1 至 50）的特征图（形状 $F_t\in\mathbb{R}^{h\times\omega\times d}$），每个特征向量（d维）作为 SAE 训练样本。$$\mathbf{z}=\text{TopK}(W_\text{enc}\mathbf{x}-\mathbf{b}_\text{pre})$$ $$\mathbf{\hat{x}}=W_\text{dec}\mathbf{z}+\mathbf{b}_\text{pre}$$ $$\mathcal{L}(\mathbf{x})=\|\mathbf{x}-\mathbf{\hat{x}}\|_2^2+\alpha\mathcal{L}_\text{aux}$$
+    - 激活数据来源：Stable Diffusion 的交叉注意力块，提取多去噪步骤（t=1 至 50）的特征图（形状 $F_t\in\mathbb{R}^{h\times\omega\times d}$），每个特征向量（d维）作为 SAE 训练样本。$$\mathbf{z}=\text{TopK}(W_\text{enc}\mathbf{x}-\mathbf{b}_\text{pre})\\\mathbf{\hat{x}}=W_\text{dec}\mathbf{z}+\mathbf{b}_\text{pre}\\\mathcal{L}(\mathbf{x})=\|\mathbf{x}-\mathbf{\hat{x}}\|_2^2+\alpha\mathcal{L}_\text{aux}$$
     辅助损失防止死潜变量
   - 目标概念特征选择
     - 识别对目标概念激活强、对其他概念激活弱的 SAE 特征
@@ -197,12 +207,13 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
     - 选择评分最高的 $\tau_c$ 个特征。
   - 推理时概念遗忘流程
     - 在扩散模型的目标交叉注意力块与下一块间插入训练好的 SAE
-    - 在验证集 $\mathcal{D}$，对于要遗忘的概念 $c$，得到表示该概念的 SAE 特征集合 $\mathcal{F}_c$ $$\mathcal{F}_c\coloneqq\{i|i\in\text{Top-}\tau_c(\{\text{score}(i,t,c,\mathcal{D})\})\}$$ $$\mu(i)\coloneqq\mu(i,t,\mathcal{D}),\space\space\forall i\in\mathcal{F}_c$$
+    - 在验证集 $\mathcal{D}$，对于要遗忘的概念 $c$，得到表示该概念的 SAE 特征集合 $\mathcal{F}_c$ $$\mathcal{F}_c\coloneqq\{i|i\in\text{Top-}\tau_c(\{\text{score}(i,t,c,\mathcal{D})\})\}\\\mu(i)\coloneqq\mu(i,t,\mathcal{D}),\space\space\forall i\in\mathcal{F}_c$$
     - 特征消融：对编码后的 latent 特征，若特征 i 属于目标集合 $\mathcal{F}_c$ 且激活 $>$ 平均激活 $\mu(i,t,\mathcal{D})$，则用负乘数缩放：$$f_i(\mathbf{x})=\begin{cases}\gamma_c\mu(i,t,\mathcal{D}_c)f_i(\mathbf{x}), & \text{if}\ i\in\mathcal{F}_c\ \land\ f_i(\mathbf{x})>\mu(i,t,\mathcal{D}), \\ f_i(\mathbf{x}) & \text{otherwise}.
 \end{cases} $$
     - 解码回传：修改后的 latent 经解码器重建，传入下一个扩散块，保留非目标特征的正常激活。
 - **支持多概念遗忘；具有对抗鲁棒性**
-### 局限性：生成速度轻微减慢；依赖大量数据；抽象概念（仇恨、暴力）难处理；相似特征彼此干扰（猫和狗特征重叠，遗忘狗会影响猫的生成）
+#### 局限性：生成速度轻微减慢；依赖大量数据；抽象概念（仇恨、暴力）难处理；相似特征彼此干扰（猫和狗特征重叠，遗忘狗会影响猫的生成）
+
 
 ## 18. Archetypal SAE: Adaptive and Stable Dictionary Learning for Concept Extraction in Large Vision Models (ICML 2025)
 ![](./Archetypal%20SAE%20Adaptive%20and%20Stable%20Dictionary%20Learning%20for%20Concept%20Extraction%20in%20Large%20Vision%20Models/1.png)
@@ -215,6 +226,7 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 - **RA-SAE**
   - 允许原子轻微偏离凸包，匹配传统 SAE 的重建性能
 
+
 ## 19. SAEBench: A Comprehensive Benchmark for Sparse Autoencoders in Language Model Interpretability (ICML 2025)
 - 传统评估依赖无监督代理指标，单一指标无法覆盖可解释性、特征解纠缠等实际需求
 - 4 大评估能力与 8 个指标详解
@@ -223,8 +235,10 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
   - 重建能力：Loss Recovered、稀疏度 - 保真度权衡
   - 特征解纠缠：Unlearning、SCR（伪相关移除）、TPP（目标探针扰动）、RAVEL
 
+
 ## 20. From Mechanistic Interpretability to Mechanistic Biology: Training, Evaluating, and Interpreting Sparse Autoencoders on Protein Language Models (ICML 2025)
 - 略
+
 
 ## 21. **Universal Sparse Autoencoders: Interpretable Cross-Model Concept Alignment (ICML 2025)**
 ![](./Universal%20Sparse%20Autoencoders%20Interpretable%20Cross-Model%20Concept%20Alignment/1.png)
@@ -241,7 +255,8 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
     - 基于通用概念空间，对同一概念维度 $k$，独立优化每个模型的输入 $\bm x^{(i)}$，最大化该维度激活，同时使用正则项 $\mathcal{R}(\bm x)$ 保证输入自然：$$\bm x_*^{(i)}=\argmax_{\bm x\in\mathcal{X}}\bm Z_k^{(i)}(\bm x^{(i)})-\lambda \mathcal{R}(\bm x^{(i)})$$
     - 价值：可视化同一概念在不同模型中的编码差异。
 - 实验模型：DinoV2，SigLIP，ViT
-### 局限：仅探索最后一层特征
+#### 局限：仅探索最后一层特征
+
 
 ## 22. Learning Multi-Level Features with Matryoshka Sparse Autoencoders (ICML 2025)
 ![](./Learning%20Multi-Level%20Features%20with%20Matryoshka%20Sparse%20Autoencoders/1.png)
@@ -274,27 +289,130 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
     - 概念检测：给定模型表示，判断是否含目标概念（二分类）
     - 模型转向：干预模型表示，使输出融入目标概念
 
-## 24. **Scaling Sparse Feature Circuits For Studying In-Context Learning (ICML 2025)**
+
+## 24. Scaling Sparse Feature Circuits For Studying In-Context Learning (ICML 2025)
+![](./Scaling%20Sparse%20Feature%20Circuits%20For%20Studying%20In-Context%20Learning/1.jpeg)
+- Motivation
+  - 现有 SAE 在 LLM 可解释性中的局限 —— 要么仅解读单个 SAE 特征，要么仅做高层干预。
+  - 使用 SAEs 来加深对 ICL 机制的理解（分解任务向量、发现 ICL 关键组件、验证组件间因果关系）
+- 任务执行特征的发现
+  - 由于任务向量对于 SAE 而言是分布外输入（聚合了来自不同残差流的信息而不是代表单一残差流）
+  - **Task Vector Cleaning (TVC)**：为任务向量 $v_{tv}$ 生成优化后的 SAE 分解权重 $\theta\in\mathbb{R}^{d_\text{SAE}}$
+    - 用 $v_{tv}$ 的 SAE 分解权重初始化 $\theta$
+    - 用 $\theta$ 重建新的任务向量 $v_\theta$，在一批零样本提示上用 $v_\theta$ 驱动模型，并计算其负对数似然损失 $\mathcal{L}_\text{NLL}(\theta)$
+    - 优化 $\theta$ 以最小化 $\mathcal{L}=\mathcal{L}_\text{NLL}(\theta)+\lambda\|\theta\|_1$
+
 
 ## 25. Sparse Autoencoders, Again? (ICML 2025)
+- SAE 依赖超参且损失非凸；VAE 虽无超参且损失平滑，但仅支持固定稀疏性
+- **VAEase**
+
 
 ## 26. Low-Rank Adapting Models for Sparse Autoencoders (ICML 2025)
+![](./Low-Rank%20Adapting%20Models%20for%20Sparse%20Autoencoders/1.jpeg)
+- 当 SAE 重构结果插入 LM 前向传播时，交叉熵损失远高于原始模型损失，传统方法训练成本极高
+- 核心方法：LoRA 适配 LM 以优化 SAE
+  - 冻结预训练 LM 和预训练 SAE，仅训练 LoRA
+  - 最小化 SAE 插入后与原始 LM 的输出分布差异
 
 ## 27. Sparse Autoencoders for Hypothesis Generation (ICML 2025)
+![](./Sparse%20Autoencoders%20for%20Hypothesis%20Generation/1.jpeg)
+- 挖掘文本与目标变量的可解释关系
 
 ## 28. **Interpreting CLIP with Hierarchical Sparse Autoencoders (ICML 2025)**
+![](./Interpreting%20CLIP%20with%20Hierarchical%20Sparse%20Autoencoders/1.jpeg)
+- CLIP 因其**分布式表示**和复杂损失函数导致解释性差；传统 SAE 需要权衡稀疏性和重构
+- **Matryoshka SAE（MSAE）**
+  - 多粒度 latent 表示：对输入 $x$，用递增的 $k$ 值（$k_1<k_2<...<k_h\le d$）生成 $h$ 个 latent 向量：$$z_i=\mathrm{ReLU}(\mathrm{TopK}_i(W_\text{enc}(x-b_\text{pre})+b_\text{enc}))\\\hat{x}_i=W_\text{dec}z_i+b_\text{pre}$$ $$\mathcal{L}(x)\coloneqq\sum_{i=1}^h\alpha_i\|x-\hat{x}_i\|_2^2$$
+  - 分层特征连贯性：$\text{TopK}_1\subseteq\text{TopK}_2\subseteq...\subseteq\text{TopK}_h$，低 $k$ 捕捉粗概念（如“动物”），高 $k$ 捕捉细特征（如“猫”）
+  - 对嵌入进行中心化，解决[模态间嵌入 Gap](#center)；通过数据集计算的缩放因子对中心化后的嵌入进行缩放，使得 $\mathbb{E}_{x\in\mathcal{X}}[\|x\|_2]=\sqrt{n}$
+  - 训练时使用图像模态计算的均值和缩放因子；文本嵌入推理时应用文本特定的均值和缩放因子；推理阶段，移出 TopK 约束，使模型能够仅基于 ReLU 激活自适应地选择活跃特征的数目
+- CLIP 解释与应用场景
+  - 概念提取与命名
+    - 用 CLIP 嵌入与 MSAE 解码器的列向量计算相似度，结合阈值筛选
+    - 概念类型覆盖颜色、物体、场景、抽象概念、地域等，且跨图像 - 文本模态一致
+  - 概念级相似性搜索
+    - 相比 CLIP 的黑箱搜索，MSAE 可解释匹配原因（如检索“爱尔兰警车”时，显示共享“ireland”“police”“foodtruck”等概念）
+    - 可控性：调整概念强度（如增大“germany”概念权重），可使检索结果从“英国警车”转向“德国警车”，且保持图像结构不变。
+  - 下游任务偏见分析（CelebA 性别分类）
+    - 基于 CLIP 嵌入训练单层分类器，用 MSAE 分析概念与性别的关联
+#### 评论：多粒度解码需要多次前向传播；就是将 MSAE 应用到 CLIP 理解上
+
 
 ## 29. Jacobian Sparse Autoencoders: Sparsify Computations, Not Just Activations (ICML 2025)
+![](./Jacobian%20Sparse%20Autoencoders%20Sparsify%20Computations,%20Not%20Just%20Activations/1.jpeg)
+- 传统 SAE 虽能将 LLM 的 latent 激活分解为稀疏、可解释的特征，但仅关注“表示”而非“计算过程”（无法解释 MLP 如何将输入 latent 映射到输出 latent）；需要设计一种方法，在稀疏化输入 / 输出激活的同时，稀疏化两者之间的连接计算（形式化为 **Jacobian 矩阵**）
+- **Jacobian SAE（JSAE）**
+  - 针对 MLP 层 $f: \mathcal{X}\rightarrow\mathcal{Y}$，训练两个 **$k$-sparse SAEs**
+  - 输入 SAE 和输出 SAE：$$\mathbf{s_x}=e_\mathbf{x}(\mathbf{x}),\ \hat{\mathbf{x}}=d_\mathbf{x}(\mathbf{s_x})\\\mathbf{s_y}=e_\mathbf{y}(\mathbf{y}),\ \hat{\mathbf{y}}=d_\mathbf{y}(\mathbf{s_y})$$
+  - 定义 $f_s:S_X\rightarrow S_Y$，即对 SAE 学习到的稀疏激活的映射 $$f_s=e_\mathbf{y}\circ f\circ d_\mathbf{x}\circ\tau_k$$ $\tau_k$ 为 TopK 激活函数
+  - High level 上，我们希望 $f_s$ 是“稀疏的”，每个输入维度只影响输出维度的一小部分（**计算图稀疏性**）$$J_{f_s,i,j}=\frac{\partial f_{s,i}(s_\mathbf{x})}{\partial s_{\mathbf{x},j}}$$
+  - $$\mathcal{L}=\mathrm{MSE}(\mathbf{x}-\hat{\mathbf{x}})+\mathrm{MSE}(\mathbf{y}-\hat{\mathbf{y}})+\frac{\lambda}{k^2}\sum_{i=1}^{n_y}\sum_{j=1}^{n_x}|J_{f_s,i,j}|$$ 除以 $k^2$ 是因为 Jacobian 矩阵最多只有 $k^2$ 个非零元素
+
+#### 评论：用 Jacobian 矩阵稀疏化近似计算图稀疏化，并非完美度量
 
 ## 30. Compute Optimal Inference and Provable Amortisation Gap in Sparse Autoencoders (ICML 2025)
+![](./Compute%20Optimal%20Inference%20and%20Provable%20Amortisation%20Gap%20in%20Sparse%20Autoencoders/1.jpeg)
+- 传统 SAE 预测稀释编码与最有稀疏编码存在差距
+
 
 ## 31. Are Sparse Autoencoders Useful? A Case Study in Sparse Probing (ICML 2025)
+![](./Are%20Sparse%20Autoencoders%20Useful%20A%20Case%20Study%20in%20Sparse%20Probing/1.jpeg)
+- Motivation
+  - 缺乏 Ground Truth 验证 SAE 是否真正提取 LLM 的可解释概念
+  - 利用 LLM activation probing 任务验证 SAE 的实用性
+- Probing
+  - 113 个二分类 probing 数据集，含语法、情感、事实等任务；AUC 评估分类器区分正负例的能力
+  - 流程
+    - 每个类别的LLM 激活（最后 token）过 SAE 编码器生成 latent
+    - 选择类别间差异最大的 TopK 个latent，训练 L1 正则化逻辑回归探测器
+
 
 ## 32. Constrain Alignment with Sparse Autoencoders (ICML 2025)
+![](./Constrain%20Alignment%20with%20Sparse%20Autoencoders/1.jpeg)
+- LLM 对齐存在缺陷
+  - RLHF：需构建奖励模型与策略梯度更新，导致计算复杂度高、训练不稳定
+  - DPO：对参考模型的约束强度敏感，且可控性有限
+  - SimPO：缺乏参考约束导致训练不稳定
+  - TDPO：token 级序列 KL 约束，需处理大规模词汇
+- **FPO**
+  - 统一损失框架：
+  - **TODO**
+
 
 ## 33. The Complexity of Learning Sparse Superposed Features with Feedback (ICML 2025)
+- **TODO**
 
 ## 34. **SAUCE: Selective Concept Unlearning in Vision-Language Models with Sparse Autoencoders (ICCV 2025)**
+![](./SAUCE%20Selective%20Concept%20Unlearning%20in%20Vision-Language%20Models%20with%20Sparse%20Autoencoders/1.jpeg)
+- Motivation
+  - VLMs 需要对隐私属性、版权元素、有害内容等概念进行 Unlearning
+  - 现有方法依赖大量标注数据；粗粒度操作导致过度遗忘
+- **SAUCE**
+![](./SAUCE%20Selective%20Concept%20Unlearning%20in%20Vision-Language%20Models%20with%20Sparse%20Autoencoders/2.jpeg)
+  - 无监督训练 [vanilla SAE](#vanilla-sae) 捕获视觉稀疏特征 ![](./SAUCE%20Selective%20Concept%20Unlearning%20in%20Vision-Language%20Models%20with%20Sparse%20Autoencoders/3.jpeg)
+    - hook VLMs **视觉编码器**的**倒数第二层残差流**，获取高层语义特征（避免浅层特征噪声）
+    - ImageNet-1k，“Please describe this figure”；扩展因子 64，训练两轮，批次大小 1024，仅更新 SAE 参数；LLaVA-v1.5-7B 上约 54 小时，LLaMA3.2-11B-Vision-Instruct 上约 72 小时（单卡 H100）
+    - $\mathcal{L}(x)=\|\mathbf{x}-\hat{\mathbf{x}}\|_2^2+\alpha\cdot\|z_1\|_1$
+  - 基于相关性的目标特征选择（类似 [SAeUron](#saeuron)）
+    - 数据集构建：对于每个任务，使用其训练集，为目标概念 $c$ 构建正数据集 $\mathcal{D}_c$ 和负数据集 $\mathcal{D}_{nc}$
+    - 特征重要性评分：$$S(i,c,\mathcal{D})=\frac{\mu(i,\mathcal{D}_c)}{\sum_{j=1}^n\mu(j,\mathcal{D}_c)+\delta}-\frac{\mu(i,\mathcal{D}_{nc})}{\sum_{j=1}^n\mu(j,\mathcal{D}_{nc})+\delta}$$
+    - 选择评分 Top-k 的特征作为目标概念 $c$ 的关键特征集 $\mathcal{F}_c$ $$\mathcal{F}_c\coloneqq\{\text{index}_i\ |\ i\in\{1,...,k\}\}$$
+  - 推理时特征干预
+    - 对于 SAE 特征 $z_i$，如果属于集合 $\mathcal{F}_c$，则乘负的缩放因子 $\gamma$ $$z_i=\begin{cases}\gamma z_i, & \text{if}\ i\in\mathcal{F}_c \\ z_i, & \text{otherwise}.
+\end{cases} $$
+- 实验数据集
+  - 具体概念 Unlearning：物体、运动场景
+  - 抽象概念 Unlearning：颜色、情绪、材质
+- 评估指标
+  - 生成式 Unlearning 准确率
+  - 判别式 Unlearning 准确率
+  - 同一领域内非目标概念的保留比例
+  - 不同领域非目标概念的保留比例
+  - MME
+
+#### 评价：仅探索 ViT 的倒数第二层
+
 
 ## 35. Unveiling Language-Specific Features in Large Language Models via Sparse Autoencoders (ACL 2025)
 
