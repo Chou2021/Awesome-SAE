@@ -6,12 +6,12 @@
 
 ## 流程
   - <span id="vanilla-sae"></span>介绍 Vanilla SAE $$z=\mathrm{ReLU}(W_\text{enc}(x-b_\text{pre})+b_\text{enc})\\\hat{x}=W_\text{dec}z+b_\text{pre}$$
-  - 侧重不同模型、不同任务上的应用（LLM、LVLM、Diffusion Model、Text-to-Image Model），要了解具体的 metric，关注一下计算资源
+  - 侧重不同模型、不同任务上的应用（LLM、LVLM、Diffusion Model、Text-to-Image Model），要了解具体的 metric，关注性能比较，关注一下计算资源
     - LLM：1（讲基础的preliminary）
     <!-- - Vision Foundation Model：21-->
     - CLIP：3、14、28
     - LVLM：16、34
-    - Stable Diffusion：17
+    - Stable Diffusion：17、**37**、**SDXL**
 
 
 ## 1. Sparse autoencoders find highly interpretable features in language models (ICLR 2024)
@@ -415,21 +415,58 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 
 
 ## 35. Unveiling Language-Specific Features in Large Language Models via Sparse Autoencoders (ACL 2025)
+- Motivation
+  - 多语言能力的内在机制解析
+  - 基于神经元的方法：识别“语言特定神经元”分析机制，但受叠加问题影响，单神经元可能编码多个无关概念导致分析结果不可靠
+- **TODO**
+
 
 ## 36. Disentangling Superpositions: Interpretable Brain Encoding Model with Sparse Concept Atoms (NeurIPS 2025)
 - 略
 
 ## 37. **One-Step is Enough: Sparse Autoencoders for Text-to-Image Diffusion Models (NeurIPS 2025)**
+- Motivation
+  - 文本到图像模型内部生成逻辑缺乏理解
+  - 以少步扩散模型 **SDXL Turbo** （1-4步生成）为对象，验证 SAEs 分解其中间特征的可行性
+- 方法
+  - SAEs 训练细节
+    - 训练对象：SDXL Turbo U-net 中 4 个高影响 Cross-attention Transformer 块的残差更新
+    - **TODO**：看 SDXL 架构
 
 ## 38. **SAEMark: Steering Personalized Multilingual LLM Watermarks with Sparse Autoencoders (NeurIPS 2025)**
+![](./SAEMark%20Steering%20Personalized%20Multilingual%20LLM%20Watermarks%20with%20Sparse%20Autoencoders/1.jpeg)
+- 面向多语言 LLM 的推理时多 bit 水印框架
+- **TODO**
+
+
 
 ## 39. **Transformer Key-Value Memories Are Nearly as Interpretable as Sparse Autoencoders (NeurIPS 2025)**
+- Transformer 的 FF 层可天然分解神经激活（视为“键值记忆” FF-KV），其原生特征的可解释性是否能与 SAEs 媲美？
+- FF 层首先将 FF 输入 $\bm x_{\text{FF}_\text{in}}\in\mathbb{R}^{d_\text{model}}$ 投影到 $d_\text{FF}$ 维表示，然后应用逐元素非线性激活 $\bm\phi(\cdot):\mathbb{R}^d\rightarrow\mathbb{R}^d$，再将其投影回去：$$\bm x_{\text{FF}_\text{out}}=\bm\phi(\bm x_{\text{FF}_\text{in}}\bm W_K+\bm b_K)\bm W_V+\bm b_V=\sum_{i\in d_\text{FF}}\bm\phi(\bm x_{\text{FF}_\text{in}}\bm W_K)_{[i]}\bm W_{V[:,i]}+\bm b_V$$
+- FF-KV 变体设计
+  - **Vanilla FF-KV**
+    - 直接将 key activations 视为特征，将 value vectors 视为特征向量
+  - **TopK FF-KV**
+    - $$\bm x_{\text{FF}_\text{out}}\approx\text{Top-}k(\bm\phi(\bm x_{\text{FF}_\text{in}}\bm W_K+\bm b_K)){\bm{W}}_V+\bm b_V$$
+  - **Normalized FF-KV**
+    - $$\bm x_{\text{FF}_\text{out}}\approx\text{Top-}k(\bm\phi(\bm x_{\text{FF}_\text{in}}\bm W_K+\bm b_K)\odot\bm s)\tilde{\bm{W}}_V+\bm b_V$$
+- 使用 SAEBench 评估
+  - FF-KV 完美重构，低冗余
 
-## 40. **Sparse Diffusion Autoencoder for Test-time Adapting Prediction of Spatiotemporal Dynamics (NeurIPS 2025)**
+#### 评价：可以用到 LVLM 幻觉分析以弥补 FF 层幻觉分析的缺失
+
+## 40. Sparse Diffusion Autoencoder for Test-time Adapting Prediction of Spatiotemporal Dynamics (NeurIPS 2025)
+![](./Sparse%20Diffusion%20Autoencoder%20for%20Test-time%20Adapting%20Prediction%20of%20Spatiotemporal%20Dynamics/1.jpeg)
+- 高维复杂系统预测
+- **TODO**
+
 
 ## 41. From Flat to Hierarchical: Extracting Sparse Representations with Matching Pursuit (NeurIPS 2025)
+- **TODO**
 
 ## 42. Revising and Falsifying Sparse Autoencoder Feature Explanations (NeurIPS 2025)
+![](./Revising%20and%20Falsifying%20Sparse%20Autoencoder%20Feature%20Explanations/1.jpeg)
+- **TODO**
 
 ## 43. Projecting Assumptions: The Duality Between Sparse Autoencoders and Concept Geometry (NeurIPS 2025)
 
