@@ -5,7 +5,8 @@
 叠加（superposition）导致多义性
 
 ## 流程
-  - <span id="vanilla-sae"></span>介绍 Vanilla SAE $$z=\mathrm{ReLU}(W_\text{enc}(x-b_\text{pre})+b_\text{enc})\\\hat{x}=W_\text{dec}z+b_\text{pre}$$
+  - <span id="vanilla-sae"></span>介绍 Vanilla SAE $$\mathbf{z}=\mathrm{ReLU}(W_\text{enc}(\mathbf{x}-\mathbf{b}_\text{pre})+\mathbf{b}_\text{enc})\\\hat{\mathbf{x}}=W_\text{dec}\mathbf{z}+\mathbf{b}_\text{pre}$$ $$\mathcal{L}(x)=\|\mathbf{x}-\hat{\mathbf{x}}\|_2^2+\alpha\cdot\|\mathbf{z}\|_1$$
+  - 介绍 TopK SAE $$\mathbf{z}=\text{TopK}(W_\text{enc}(\mathbf{x}-\mathbf{b}_\text{pre}))\\\hat{\mathbf{x}}=W_\text{dec}\mathbf{z}+\mathbf{b}_\text{pre}$$ $$\mathcal{L}(\mathbf{x})=\|\mathbf{x}-\mathbf{\hat{x}}\|_2^2+\alpha\mathcal{L}_\text{aux}\\\mathcal{L}_\text{aux}=\|(\mathbf{x}-\hat{\mathbf{x}})-W_\text{dec}\mathbf{z}_\text{dead}\|_2^2$$
   - 侧重不同模型、不同任务上的应用（LLM、LVLM、Diffusion Model、Text-to-Image Model），要了解具体的 metric，关注性能比较，关注一下计算资源
     - LLM：1（讲基础的preliminary）
     <!-- - Vision Foundation Model：21-->
@@ -13,6 +14,10 @@
     - LVLM：16、34、47
     - Stable Diffusion：17、**37**、**SDXL**
 
+- LLM：Vanilla SAE 和 TopK SAE
+- CLIP：3、14、28（?）
+- LVLM：16、34、47
+- Stable Diffusion：17
 
 ## 1. Sparse autoencoders find highly interpretable features in language models (ICLR 2024)
 ![插入图片](./Sparse%20autoencoders%20find%20highly%20interpretable%20features%20in%20language%20models/1.png)
@@ -393,7 +398,7 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
   - 无监督训练 [vanilla SAE](#vanilla-sae) 捕获视觉稀疏特征 ![](./SAUCE%20Selective%20Concept%20Unlearning%20in%20Vision-Language%20Models%20with%20Sparse%20Autoencoders/3.jpeg)
     - hook VLMs **视觉编码器**的**倒数第二层残差流**，获取高层语义特征（避免浅层特征噪声）
     - ImageNet-1k，“Please describe this figure”；扩展因子 64，训练两轮，批次大小 1024，仅更新 SAE 参数；LLaVA-v1.5-7B 上约 54 小时，LLaMA3.2-11B-Vision-Instruct 上约 72 小时（单卡 H100）
-    - $\mathcal{L}(x)=\|\mathbf{x}-\hat{\mathbf{x}}\|_2^2+\alpha\cdot\|z_1\|_1$
+    - [vanilla SAE](#vanilla-sae)：$\mathcal{L}(x)=\|\mathbf{x}-\hat{\mathbf{x}}\|_2^2+\alpha\cdot\|z_1\|_1$
   - 基于相关性的目标特征选择（类似 [SAeUron](#saeuron)）
     - 数据集构建：对于每个任务，使用其训练集，为目标概念 $c$ 构建正数据集 $\mathcal{D}_c$ 和负数据集 $\mathcal{D}_{nc}$
     - 特征重要性评分：$$S(i,c,\mathcal{D})=\frac{\mu(i,\mathcal{D}_c)}{\sum_{j=1}^n\mu(j,\mathcal{D}_c)+\delta}-\frac{\mu(i,\mathcal{D}_{nc})}{\sum_{j=1}^n\mu(j,\mathcal{D}_{nc})+\delta}$$
