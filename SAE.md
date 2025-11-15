@@ -11,7 +11,7 @@
     <!-- - Vision Foundation Model：21-->
     - CLIP：3、14、28、47
     - LVLM：16、34、47
-    - Stable Diffusion：17、**High-resolution image synthesis with latent diffusion models**、**37**、**SDXL**
+    - Stable Diffusion：17、**37**、**SDXL**
 
 
 ## 1. Sparse autoencoders find highly interpretable features in language models (ICLR 2024)
@@ -198,7 +198,7 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
   - 基于 SAE 的扩散模型可解释概念遗忘方法。
 - **SAeUron**
   - 架构
-    - 激活数据来源：Stable Diffusion 的交叉注意力块，提取多去噪步骤（t=1 至 50）的特征图（形状 $F_t\in\mathbb{R}^{h\times\omega\times d}$），每个特征向量（d维）作为 SAE 训练样本。$$\mathbf{z}=\text{TopK}(W_\text{enc}\mathbf{x}-\mathbf{b}_\text{pre})\\\mathbf{\hat{x}}=W_\text{dec}\mathbf{z}+\mathbf{b}_\text{pre}\\\mathcal{L}(\mathbf{x})=\|\mathbf{x}-\mathbf{\hat{x}}\|_2^2+\alpha\mathcal{L}_\text{aux}$$
+    - 激活数据来源：Stable Diffusion 的交叉注意力块（物体遗忘用 up.1.1 块，风格遗忘用 up.1.2 块），提取多去噪步骤（t=1 至 50）的特征图（形状 $F_t\in\mathbb{R}^{h\times\omega\times d}$），每个特征向量（d维）作为 SAE 训练样本。$$\mathbf{z}=\text{TopK}(W_\text{enc}\mathbf{x}-\mathbf{b}_\text{pre})\\\mathbf{\hat{x}}=W_\text{dec}\mathbf{z}+\mathbf{b}_\text{pre}\\\mathcal{L}(\mathbf{x})=\|\mathbf{x}-\mathbf{\hat{x}}\|_2^2+\alpha\mathcal{L}_\text{aux}$$
     辅助损失防止死潜变量
   - 目标概念特征选择
     - 识别对目标概念激活强、对其他概念激活弱的 SAE 特征
@@ -430,7 +430,8 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
   - 以少步扩散模型 **SDXL Turbo** （1-4步生成）为对象，验证 SAEs 分解其中间特征的可行性
 - 方法
   - SAEs 训练细节
-    - 训练对象：SDXL Turbo U-net 中 4 个高影响 Cross-attention Transformer 块的残差更新
+    - 训练对象：SDXL Turbo U-net 中 4 个高影响 Cross-attention Transformer 块的残差更新（down.2.1，mid.0，up.0.0、up.0.1）
+    - 1.5M LAION-COCO 提示的 SDXL Turbo 1 步生成中间特征，单块含 384 M 个 16×16×d 维特征向量
     - **TODO**：看 SDXL 架构
 
 ## 38. **SAEMark: Steering Personalized Multilingual LLM Watermarks with Sparse Autoencoders (NeurIPS 2025)**
@@ -517,3 +518,14 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 
 ## 48. Dense SAE Latents Are Features, Not Bugs (NeurIPS 2025)
 
+
+## 49. High-Resolution Image Synthesis with Latent Diffusion Models
+![](./SD.jpeg)
+- Diffusion Model 在像素空间进行扩散去噪，分为感知压缩阶段（去除高频细节，学习少量的语义变化）和语义压缩阶段（实际的生成模型学习数据的语义和概念）
+- 训练感知压缩模型（自编码器）代替感知压缩阶段
+  - 给定 RGB 空间中的图像 $x\in\mathbb{R}^{H\times W\times 3}$，编码器 $\mathcal{E}$ 将 $x$ 编码为潜在表示 $z=\mathcal{E}x$，解码器 $\mathcal{D}$ 从潜在表示重建图像，得到 $\tilde{x}=\mathcal{D}(z)=\mathcal{D}(\mathcal{E}(x))$，其中 $z\in\mathbb{R}^{h\times w\times c}$。将图片下采样 $f=H/h=W/w$
+  - $$L_{DM}=\mathbb{E}_{x,\epsilon\sim\mathcal{N}(0,1),t}\left[\|\epsilon-\epsilon_\theta(x_t,t)\|_2^2\right]$$ $$L_{LDM}\coloneqq\mathbb{E}_{\mathcal{E}(x),\epsilon\sim\mathcal{N}(0,1),t}\left[\|\epsilon-\epsilon_\theta(z_t,t)\|_2^2\right]$$
+- 条件生成
+  - 在 UNet 骨干网络上引入交叉注意力机制，将扩散模型转化为更灵活的条件图像生成器
+  - 使用特定域编码器将来自各种模态的 $y$ 投影到中间表示 $\tau_\theta(y)\in\mathbb{R}^{M\times d_\tau}$，通过 $\text{Attention}(Q,K,V)=\text{softmax}(\frac{QK^T}{\sqrt{d}})\cdot V$ 将其映射到 UNet 的中间层 $$Q=W_Q^{(i)}\cdot\varphi_i(z_t),\ K=W_K^{(i)}\cdot\tau_\theta(y),\ V=W_V^{(i)}\cdot\tau_\theta(y)$$ $\varphi_i(z_t)\in\mathbb{R}^{N\times d_\epsilon^i}$ 表示 UNet 的中间表示（flattened）
+  - $$L_{LDM}\coloneqq\mathbb{E}_{\mathcal{E}(x),y,\epsilon\sim\mathcal{N}(0, 1),t}\left[\|\epsilon-\epsilon_\theta(z_t,t,\tau_\theta(y))\|_2^2\right]$$
