@@ -9,9 +9,9 @@
   - 侧重不同模型、不同任务上的应用（LLM、LVLM、Diffusion Model、Text-to-Image Model），要了解具体的 metric，关注性能比较，关注一下计算资源
     - LLM：1（讲基础的preliminary）
     <!-- - Vision Foundation Model：21-->
-    - CLIP：3、14、28
-    - LVLM：16、34
-    - Stable Diffusion：17、**37**、**SDXL**
+    - CLIP：3、14、28、47
+    - LVLM：16、34、47
+    - Stable Diffusion：17、**High-resolution image synthesis with latent diffusion models**、**37**、**SDXL**
 
 
 ## 1. Sparse autoencoders find highly interpretable features in language models (ICLR 2024)
@@ -476,8 +476,44 @@ $$(\mathbf{W}_{\mathrm{mag}})_{ij}\coloneqq(\exp(\mathbf{r}_\mathrm{mag}))_i\cdo
 ## 45. A is for Absorption: Studying Feature Splitting and Absorption in Sparse Autoencoders (NeurIPS 2025)
 
 ## 46. **Sparse Autoencoders Learn Monosemantic Features in Vision-Language Models (NeurIPS 2025)**
+![](./Sparse%20Autoencoders%20Learn%20Monosemantic%20Features%20in%20Vision-Language%20Models/1.png)
+- 缺乏神经元级单义性量化指标
+- **MonoSemanticity score（MS）**
+  - 通过“神经元高激活图像的相似性”量化单义性
+  - 计算图像嵌入相似度 $$s_{nm}=\frac{E(\mathbf{x}_n)\cdot E(\mathbf{x}_m)}{|E(\mathbf{x}_n)||E(\mathbf{x}_m)|}$$
+  - 对于数据集 $\mathcal{I}$，提取所有激活向量 $\{\mathbf{a}^k=[a_n^k]_n\in\mathbb{R}^N\}_{k=1}^\omega$。具体的，对于图片 $\mathbf{x}_n$，第 $k$ 个神经元的激活为 $$\mathbf{v}_n=f_l(\mathbf{x}_n),a_n^k=\phi^k(\mathbf{v}_n)$$
+  - 对神经元激活做归一化 $$\tilde{a}_n^k=\frac{a_n^k-\min_{n^\prime}a_{n^\prime}^k}{\max_{n^\prime}a_{n^\prime}^k-\min_{n^\prime}a_{n^\prime}^k}$$
+  - 量化图像对 $nm$ 的共享激活 $$r_{nm}^k=\tilde{a}_n^k\cdot \tilde{a}_m^k$$
+  - 激活加权的平均相似度 $$\text{MS}^k=\frac{1}{N(N-1)}\sum_{n=1}^N\sum_{\substack{m=1\\ m\ne n}}^Nr^k_{nm}s_{nm}$$
+- 实验设计
+  - VLMs：CLIP ViT-L/14-336px、SigLIP SoViT-400m；MLLM：LLaVA-1.5-7b
+  - 干预 MLLM
+
 
 ## 47. **VL-SAE: Interpreting and Enhancing Vision-Language Alignment with a Unified Concept Set (NeurIPS 2025)**
+![](./VL-SAE%20Interpreting%20and%20Enhancing%20Vision-Language%20Alignment%20with%20a%20Unified%20Concept%20Set/1.png)
+- 视觉 - 语言对齐机制缺乏可解释性，因多模态表示语义难以映射到统一概念集
+- 方法：
+  - $\mathbf{x}_v,\mathbf{x}_l$ 表示视觉 / 语言表征（CLIP 用编码器输出；LVLM 用 LLM 隐藏层 token 表示的均值）
+  - 显式表征对齐（针对 LVLMs）：LVLMs 隐式对齐，无法直接用余弦相似度衡量语义相似性
+    - 辅助自编码器 $E_v,E_l,D_v,D_l$
+  $$\hat{\mathbf{x}}_v=D_v(\mathbf{x}^e_v)=D_v(E_v(\mathbf{x}_v)), \hat{\mathbf{x}}_l=D_l(\mathbf{x}^e_l)=D_l(E_l(\mathbf{x}_l))$$
+    - 损失函数 $$\mathcal{L}(\mathbf{x}_v,\mathbf{x}_l)=\texttt{InfoNCE}(\mathbf{x}_v^e,\mathbf{x}_l^e,\mathbf{x}_v^{e-},\mathbf{x}_l^{e-})+\|\hat{\mathbf{x}}_v-\mathbf{x}_v\|_2^2+\|\hat{\mathbf{x}}_l-\mathbf{x}_l\|_2^2$$
+    - CLIP 由于显式对齐，直接使用 $\mathbf{x}^e_v=\mathbf{x}_v,\mathbf{x}^e_l=\mathbf{x}_l$
+  - **VL-SAE**：使语义相似的多模态表示产生一致的神经元激活
+    - 距离基编码器：基于归一化表示与神经元权重的欧氏距离 $$g(\mathbf{x}^e,\mathbf{w}_i)=\left\|\frac{\mathbf{x}_e}{\|\mathbf{x}_e\|_2}-\frac{\mathbf{w}_i}{\|\mathbf{w}_i\|_2}\right\|_2=\sqrt{2-2\cos(\mathbf{x}^e,\mathbf{w}_i)}$$ $$E^s(\mathbf{x}^e)[i]=2-g(\mathbf{x}^e,\mathbf{w}_i)=2-\sqrt{2-2\cos(\mathbf{x}^e,\mathbf{w}_i)}$$ $\mathbf{w}_i\in\mathbb{R}^d$ 是可学习的权重向量
+    - $\mathbf{h}=\texttt{TopK}(E^s(\mathbf{x}^e))$
+    - 模态特定解码器：$$\hat{\mathbf{x}}_v^e=D_v^s(\mathbf{h}_v),\ \hat{\mathbf{x}}_l^e=D_l^s(\mathbf{h}_l)$$
+    - $$\mathcal{L}(\mathbf{x}_v^e,\mathbf{x}_l^e)=\|\hat{\mathbf{x}}_v^e-\mathbf{x}_v^e\|_2^2+\|\hat{\mathbf{x}}_l^e-\mathbf{x}_l^e\|_2^2$$
+
+- 实验详情
+  - CC3M
+  - CLIP：ViT-B/32、ViT-B/16、ViT-L/14、ViT-H/14；LVLMs：LLaVA1.5、Qwen-VL
+  - 单张 4090，CLIP 用全精度训练，LVLMs 用 FP16 训练
+- 应用：
+  - CLIP 相似度修正 $$y=\cos(\mathbf{x}_v,\mathbf{x}_l)+\alpha\cos(\mathbf{h}_v,\mathbf{h}_l)$$
+  - 提升 LVLM 视觉 - 语言对齐 $$\hat{\mathbf{x}}_l=(1-\alpha_l)\mathbf{x}_l+\alpha_l D_l(D_l^s(\mathbf{h}_l+\beta\mathbf{h}_v))$$ $$p_{cd}(y\ |\ \mathbf{x}_{vt},\mathbf{x}_{lt},\hat{\mathbf{x}}_{lt})=\text{softmax}[(1-\alpha_{cd})\text{logit}_\theta(y\ |\ \mathbf{x}_{vt},\mathbf{x}_{lt})+\alpha_{cd}\text{logit}_\theta(y\ |\ \mathbf{x}_{vt},\hat{\mathbf{x}}_{lt})]$$
+
 
 ## 48. Dense SAE Latents Are Features, Not Bugs (NeurIPS 2025)
 
